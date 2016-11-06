@@ -1,0 +1,169 @@
+\documentclass[11pt,wide]{mwart}
+\usepackage[utf8]{inputenc} 
+\usepackage[OT4,plmath]{polski}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{epstopdf}
+
+\usepackage{amsmath,amssymb,amsfonts,amsthm,mathtools}
+
+
+\usepackage{bbm}
+\usepackage{hyperref}
+\usepackage{url}
+
+\usepackage{comment}
+
+\date{Wrocław, \today}
+\title{\LARGE\textbf{Pracownia z analizy numerycznej}
+  \\Sprawozdanie do zadania \textbf{P1.16.}}
+
+\author{Maciej Buszka}
+
+\newtheorem{tw}{Twierdzenie}
+\newtheorem{alg}{Algorytm}
+
+\begin{document}
+\maketitle
+
+\section{Wstęp}
+
+Problem rozwiązania układu równań nieliniowych jest często napotykany w fizyce, matematyce i informatyce np gdy próbujemy symulować zachowanie układu 
+
+\section{Metoda Newtona}
+
+\subsection*{Intuicja i opis}
+
+Dla funkcji jednej zmiennej $ f(x) = y $ metoda Newtona opiera się na założeniu że w okolicach punktu $ x_n $ możemy przybliżyć funkcję $ f $ funkcją liniową $ l(x) = f'(x_n)(x - x_n) + f(x_n) $. Można łatwo przekształcić ten wzór tak aby znaleźć miejsce zerowe tej funkcji liniowej.
+
+\begin{equation} \label{eq:newtonsimple}
+		x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}
+\end{equation}
+
+Otrzymaną zależność możemy zinterpretować następująco: jeżeli $ x_n $ jest wystarczająco blisko miejsca zerowego $ \alpha $ funkcji $ f $, to chcielibyśmy znaleźć taką poprawkę $ h $ aby $ f(x_n + h) = f(\alpha) = 0 $. Korzystając ze wzoru Taylora $ f(x_n + h) = f(x_n) + f'(x_n)h + \dots $ zakładając, że $ x_n $ jest blisko $ \alpha $ otrzymujemy równanie $ h = -\frac{f(x_n)}{f'(x_n)} $. Zatem z równania \eqref{eq:newtonsimple} $ f(x_{n+1}) \approx 0 $ co pokazuje, że taka zależność może dać nam ciąg zbieżny do $ \alpha $.\\
+ 
+Analogiczne rozumowanie chcielibyśmy teraz przeprowadzić dla funkcji $ F : \mathbb{R}^n \to \mathbb{R}^n $. Można ją zapisać w postaci wektora funkcji:
+
+$$ 
+F(X) = F(x_1, x_2, \ldots, x_n) = 
+\left(\begin{matrix}
+	f_1(x_1, x_2, \ldots, x_n) \\ 
+	f_2(x_1, x_2, \ldots, x_n) \\ 
+	\vdots\\ 
+	f_n(x_1, x_2, \ldots, x_n)
+\end{matrix}\right)
+$$
+Jeżeli funkcja $ F $ jest różniczkowalna w punkcie $ X_0 $ to macierz jej pochodnych cząstkowych nazywana Jakobianem jest macierzą przekształcenia liniowego które jest najlepszym przybliżeniem $ F $
+$$ J = 
+\begin{pmatrix}
+\frac{\partial f_1}{\partial x_1} & \frac{\partial f_1}{\partial x_2} &  \ldots & \frac{\partial f_1}{\partial x_n} \\ 
+
+ \vdots & & & \vdots  \\ 
+\frac{\partial f_n}{\partial x_1} & \frac{\partial f_n}{\partial x_2} &  \ldots & \frac{\partial f_n}{\partial x_n} \\ 
+\end{pmatrix}
+$$
+Korzystając ze wzoru Taylora dla funkcji $ F $ w punkcie $ X^{(n)} $ chcielibyśmy aby $ H$ było taką poprawką, że $ F(X^{(n)} + H) = 0 $
+$$
+ 	0 = F(X^{(n)} + H) \approx F(X^{(n)}) + J(X^{(n)})H
+$$
+Stąd
+\begin{equation} \label{eq:newtonH}
+	J(X^{(n)})H = -F(X^{(n)})
+\end{equation}
+Jeśli J jest odwracalna, to możemy przekształcić równanie \eqref{eq:newtonH} do postaci
+$$ 
+	H = -J^{-1}(X^{(n)})F(X^{(n)}) 
+$$
+I wykorzystać tą zależność do znalezienia następnego przybliżenia miejsca zerowego funkcjji $ F $
+
+\begin{equation} \label{eq:newtonrec}
+	X^{(n + 1)} = X^{(n)} + H
+\end{equation}
+\begin{equation*}
+	X^{(n + 1)} = X^{(n)} - J^{-1}(X^{(n)})F(X^{(n)})
+\end{equation*}
+Niestety aby bezpośrednio wykorzystać powyższe równanie musielibyśmy w każdym kroku  obliczać odwrotność macierzy $ J(X^{(n)}) $ co jest kosztowne. Zamiast tego lepiej bezpośrednio rozwiązać równanie \eqref{eq:newtonH} i otrzymane $ H $ podstawić do wzoru \eqref{eq:newtonrec}
+
+\subsection*{Analiza teorytyczna}
+\subsection*{Przykład rozbieżności}
+\subsection*{Implementacja}
+Metodę newtona bardzo łatwo zaimplementować o ile założymy, że Jakobian funkcji jest nam dany. W poniższym algorytmie zakładamy, że przekazane są $ F $ - funkcja, $ J $ - pochodna tej funkcji, $ X $ - przybliżenie początkowe oraz \texttt{eps} i \texttt{imax} -kryteria zatrzymania, odpowiednio tolerowany błąd względny przybliżenia jak i maksymalna liczba iteracji. W algorytmie wykorzystuję funkcję biblioteczną \texttt{norm(X} która oblicza normę wektora $ X $ oraz funkcję \texttt{solve(A, B)} która rozwiązuje układ równań $ AX = B $, która zaimplentowana przeze mnie wykorzystuje metodę eliminacji Gaussa
+\begin{verbatim}
+		Dane: F, J, X, eps = 1e-15, imax = 20
+		Wyjście : X
+		
+		i := 0
+		e := 1.0
+		while e > eps and i < imax do
+		  JX := J(X)
+		  FX := F(X)
+		  H  := solve(JX, FX)
+		  e  := norm(H) / norm(X)
+		  X  := X - H
+		  i  := i + 1
+		done			
+\end{verbatim}
+\subsection*{Koszt iteracji}
+W każdej iteracji głównej pętli metody Newtona musimy wykonać następujące kosztowne operacje:
+\begin{enumerate}
+\item Obliczenie wartości funkcji $ F(X) $
+\item Obliczenie wartości jakobianu $ J(X) $
+\item Obliczenie normy $ X $ i $ H $
+\item Rozwiązanie układu równań $ J(X)H = F(X)$
+\end{enumerate}
+Koszt dwóch pierwszych nie jest zależny od implementacji metody Newtona, koszt trzeciej jest liniowy względem wielkości wektora $ H $, natomiast koszt rozwiązania układu równań jest zanalizowany w rozdziale \ref{SS:gausscost}
+\section{Metoda eliminacji Gaussa}
+\subsection*{Opis}
+Metoda eliminacji Gaussa jest najprostszym koncepcyjnie algorytmem rozwiązywania układu równań liniowych postaci $ AX = B $.
+Składa się on z dwóch faz: eliminacji i podstawiania. Rozważmy układ
+$$
+\left(\begin{matrix}
+a_{11} & a_{12} & \ldots & a_{1n} \\
+a_{21} & a_{22} & \ldots & a_{2n} \\
+\vdots & \vdots & 		 & \vdots \\
+a_{i1} & a_{i2} & \ldots & a_{in} \\
+\vdots & \vdots & 		 & \vdots \\
+a_{n1} & a_{n2} & \ldots & a_{nn}
+\end{matrix}\right)
+\left(\begin{matrix}
+x_1 \\ x_2 \\ \vdots \\ x_i \\ \vdots \\ x_n
+\end{matrix}\right) = 
+\left(\begin{matrix}
+b_1 \\ b_2 \\ \vdots \\ b_i \\ \vdots \\ b_n
+\end{matrix}\right)
+$$
+W fazie eliminacji chcemy sprowadzić go do postaci górnotrójkątnej tj.
+$$
+\left(\begin{matrix}
+a_{11} & a_{12} &  & \ldots  & & a_{1n} \\
+0 & a_{22} &  & \ldots  & & a_{2n} \\
+\vdots & \vdots & \ddots &		 & & \vdots \\
+0 & 0 & \ldots & a_{ii}  & \ldots & a_{in} \\
+\vdots & \vdots &  &		 & \ddots & \vdots \\
+0 & 0 &  & \ldots  & 0 & a_{nn}
+\end{matrix}\right)
+\left(\begin{matrix}
+x_1 \\ x_2 \\ \vdots \\ x_i \\ \vdots \\ x_n
+\end{matrix}\right) = 
+\left(\begin{matrix}
+b_1 \\ b_2 \\ \vdots \\ b_i \\ \vdots \\ b_n
+\end{matrix}\right)
+$$
+Możemy to osiągnąć odejmując odpowiednią wielokrotność pierwszego wiersza od pozostałych, a następnie powtarzając ten krok dla macierzy z obciętym pierwszym wierszem i kolumną. Tak więc w $ k $-tym powtórzeniu procedury musimy wykonać następujące podstawienia:
+\begin{equation}
+\begin{cases}
+	\alpha_k \leftarrow \frac{a_{ik}}{a_{kk}} \\
+	a_{ij} \leftarrow a_{ij} - \alpha_k a_{kj} \\
+	b_{i} \leftarrow b_{i} - \alpha_k b_{i}
+\end{cases} \text{ dla }(k \leq j \leq n), (k + 1 \leq i \leq n)
+\end{equation}
+Współczynnik $ \alpha_k $ nazywamy mnożnikiem
+\subsection*{Implementcja}
+Podczas implementacji metody Gaussa największym problemem jest wybór wiersza względem którego będziemy wykonywać eliminację. Po pierwsze nie może on mieć zerowego wiodącego wyrazu (tj. wyrazu leżącego na przekątnej macierzy). Po drugie, jeżeli będzie on bardzo mały
+\subsection*{Koszt} \label{SS:gausscost}
+\section{Wyniki eksperymentów}
+\section{Analiza wyników}
+\section{Metoda siecznych?}
+\section{Wnioski}
+\end{document}

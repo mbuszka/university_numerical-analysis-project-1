@@ -2,3 +2,8 @@
 *.jl.*.cov
 *.jl.mem
 deps/deps.jl
+zadanie/doc/sprawozdanie.aux
+zadanie/doc/sprawozdanie.log
+zadanie/doc/sprawozdanie.out
+zadanie/doc/sprawozdanie.synctex.gz
+zadanie/prog/.ipynb_checkpoints/
