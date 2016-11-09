@@ -1,7 +1,3 @@
-module Gauss
-
-export gauss_naive!, gauss!
-
 """
 Oblicza rozwiązanie układu równań AX = B metodą eliminacji Gaussa.
 
@@ -118,5 +114,3 @@ function gauss_substitute!(A, B, l, n)
   end
   X
 end
-
-end # Gauss

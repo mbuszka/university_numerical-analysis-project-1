@@ -5,6 +5,8 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{epstopdf}
+\usepackage{alltt}
+\usepackage[section]{placeins}
 
 \usepackage{amsmath,amssymb,amsfonts,amsthm,mathtools}
 
@@ -33,7 +35,7 @@ Problem rozwiązania układu równań nieliniowych jest często napotykany w fiz
 
 \section{Metoda Newtona}
 
-\subsection*{Intuicja i opis}
+\subsection{Intuicja i opis}
 
 Dla funkcji jednej zmiennej $ f(x) = y $ metoda Newtona opiera się na założeniu że w okolicach punktu $ x_n $ możemy przybliżyć funkcję $ f $ funkcją liniową $ l(x) = f'(x_n)(x - x_n) + f(x_n) $. Można łatwo przekształcić ten wzór tak aby znaleźć miejsce zerowe tej funkcji liniowej.
 
@@ -85,13 +87,13 @@ I wykorzystać tą zależność do znalezienia następnego przybliżenia miejsca
 \end{equation*}
 Niestety aby bezpośrednio wykorzystać powyższe równanie musielibyśmy w każdym kroku  obliczać odwrotność macierzy $ J(X^{(n)}) $ co jest kosztowne. Zamiast tego lepiej bezpośrednio rozwiązać równanie \eqref{eq:newtonH} i otrzymane $ H $ podstawić do wzoru \eqref{eq:newtonrec}
 
-\subsection*{Analiza teorytyczna}
-\subsection*{Przykład rozbieżności}
-\subsection*{Implementacja}
+\subsection{Analiza teorytyczna}
+\subsection{Przykład rozbieżności}
+\subsection{Implementacja}
 Metodę newtona bardzo łatwo zaimplementować o ile założymy, że Jakobian funkcji jest nam dany. W poniższym algorytmie zakładamy, że przekazane są $ F $ - funkcja, $ J $ - pochodna tej funkcji, $ X $ - przybliżenie początkowe oraz \texttt{eps} i \texttt{imax} -kryteria zatrzymania, odpowiednio tolerowany błąd względny przybliżenia jak i maksymalna liczba iteracji. W algorytmie wykorzystuję funkcję biblioteczną \texttt{norm(X} która oblicza normę wektora $ X $ oraz funkcję \texttt{solve(A, B)} która rozwiązuje układ równań $ AX = B $, która zaimplentowana przeze mnie wykorzystuje metodę eliminacji Gaussa
 \begin{verbatim}
 		Dane: F, J, X, eps = 1e-15, imax = 20
-		Wyjście : X
+		Wynik : X
 		
 		i := 0
 		e := 1.0
@@ -104,7 +106,7 @@ Metodę newtona bardzo łatwo zaimplementować o ile założymy, że Jakobian fu
 		  i  := i + 1
 		done			
 \end{verbatim}
-\subsection*{Koszt iteracji}
+\subsection{Koszt iteracji}
 W każdej iteracji głównej pętli metody Newtona musimy wykonać następujące kosztowne operacje:
 \begin{enumerate}
 \item Obliczenie wartości funkcji $ F(X) $
@@ -114,7 +116,7 @@ W każdej iteracji głównej pętli metody Newtona musimy wykonać następujące
 \end{enumerate}
 Koszt dwóch pierwszych nie jest zależny od implementacji metody Newtona, koszt trzeciej jest liniowy względem wielkości wektora $ H $, natomiast koszt rozwiązania układu równań jest zanalizowany w rozdziale \ref{SS:gausscost}
 \section{Metoda eliminacji Gaussa}
-\subsection*{Opis}
+\subsection{Opis} \label{p:gaussopis}
 Metoda eliminacji Gaussa jest najprostszym koncepcyjnie algorytmem rozwiązywania układu równań liniowych postaci $ AX = B $.
 Składa się on z dwóch faz: eliminacji i podstawiania. Rozważmy układ
 $$
@@ -158,11 +160,149 @@ Możemy to osiągnąć odejmując odpowiednią wielokrotność pierwszego wiersz
 	b_{i} \leftarrow b_{i} - \alpha_k b_{i}
 \end{cases} \text{ dla }(k \leq j \leq n), (k + 1 \leq i \leq n)
 \end{equation}
-Współczynnik $ \alpha_k $ nazywamy mnożnikiem
-\subsection*{Implementcja}
-Podczas implementacji metody Gaussa największym problemem jest wybór wiersza względem którego będziemy wykonywać eliminację. Po pierwsze nie może on mieć zerowego wiodącego wyrazu (tj. wyrazu leżącego na przekątnej macierzy). Po drugie, jeżeli będzie on bardzo mały
-\subsection*{Koszt} \label{SS:gausscost}
+Współczynnik $ \alpha_k $ nazywamy mnożnikiem, natomiast wyraz $ a_{kk} $ elementem głównym względem którego redukujemy nasz układ. Gdy już otrzymamy macierz w postaci górnotrójkątnej, wystarczy wykonać podstawienia 
+$$ 
+\begin{cases}
+	x_n \leftarrow \frac{b_n}{a_{nn}} \\
+	x_k \leftarrow \frac{b_k - \sum_{j = k+1}^{n} a_{kj}x_{j}}{a_{kk}} \quad \text{ dla } k = (n-1, \ldots ,  1)
+\end{cases}
+$$
+aby otrzymać wynik
+\subsection{Znaczenie elementów głównych}
+Podczas implementacji metody Gaussa największym problemem jest wybór wiersza względem którego będziemy wykonywać eliminację. Po pierwsze nie może on mieć zerowego elementu głównego. Po drugie, jeżeli będzie on bardzo mały względem innych elementów w tej kolumie macierzy, natrafimy na błędy wynikające z dodawania i odejmowania bardzo dużych liczb. Rozważmy dla przykładu układ równań
+\begin{align} \label{eq:gaussfail}
+\left(\begin{matrix}
+\epsilon & 1	\\
+       1 & 1
+\end{matrix}\right)
+\left(\begin{matrix}
+x_1 \\ x_2
+\end{matrix}\right) = 
+\left(\begin{matrix}
+1 \\ 2
+\end{matrix}\right)
+\end{align}
+W pierwszym (i jedynym) kroku eliminacji przekształcony zostanie on do postaci
+\begin{align*}
+\left(\begin{matrix}
+\epsilon & 1	\\
+ 0 & 1 - \epsilon^{-1}
+\end{matrix}\right)
+\left(\begin{matrix}
+x_1 \\ x_2
+\end{matrix}\right) = 
+\left(\begin{matrix}
+1 \\ 2 - \epsilon^{-1}
+\end{matrix}\right)
+\end{align*}
+Ma on rozwiązania 
+$$ 
+x_2 = \frac{2 - \epsilon^{-1}}{1 - \epsilon^{-1}} \approx 1 \quad x_1 = \frac{(1 - x_2)}{\epsilon} \approx 1
+$$
+Jednak przy obliczaniu tych wartości, dla odpowiednio małego $ \epsilon $,  $ 2 - \epsilon^{-1} = 1 - \epsilon^{-1} = \epsilon^{-1} $ co daje nam $ x_2 = 1 $ i $ x_1 = 0 $, co jest absurdalnym wynikiem. Gdyby poprzedni układ zapisać w postaci
+\begin{align*}
+\left(\begin{matrix}
+       1 & 1 \\
+\epsilon & 1
+\end{matrix}\right)
+\left(\begin{matrix}
+x_1 \\ x_2
+\end{matrix}\right) = 
+\left(\begin{matrix}
+1 \\ 2
+\end{matrix}\right)
+\end{align*}
+otrzymalibyśmy poprawny wynik, co jest pokazane w [Kincaid]
+Widzimy zatem, że konieczne jest odpowiednie wybieranie wiersza względem którego wykonamy redukcję.
+\subsection{Implementacja}
+Wykorzystamy algorytm eliminacji Gaussa ze skalowanym wyborem wierszy głównych opisany w [Kincaid]. Radzi on sobie z zerowymi oraz znacząco różnymi elementami głównymi macierzy permutując na bierząco kolejność wierszy. Na początku tworzymy wektor skal $ s_i = \max_{1 \leq k \leq n}a_{ik} $, po czym w \texttt{k}-tym kroku wybieramy wiersz w którym iloraz $ \frac{a_{kj}}{s_j} (j = k, k+1, \ldots,n)$ jest najmniejszy. Poza tą modyfikacją algorytm jest jak w \S\ref{p:gaussopis} Pseudokod dostępny jest w [Kincaid], a jego implementacja w języku Julia znajduje się w pliku \texttt{gauss.jl}
+\subsection{Koszt} \label{SS:gausscost}
+\subsection{Wskaźnik uwarunkowania macierzy}
 \section{Wyniki eksperymentów}
+\subsection{Znaczenie elementu głównego w eliminacji Gaussa}
+Porównam tutaj zachowanie naiwnej implementacji eliminacji Gaussa i algorytmu ze skalowanym elementem głównym w arytmetyce podwójnej precyzji (typ danych \texttt{Float64})
+\begin{center}
+\begin{table}[!htb]
+    \begin{subtable}{.5\linewidth}
+      \centering
+        \caption{naiwna}
+\begin{tabular}{| c | r | r |} \hline
+$ \epsilon $ & $x_1$ & $x_2$ \\ \hline
+1.00000e-01 & 1.1111111e+00 & 8.8888889e-01 \\ \hline
+1.00000e-02 & 1.0101010e+00 & 9.8989899e-01 \\
+\multicolumn{3}{|c|}{\vdots} \\
+1.00000e-14 & 9.9920072e-01 & 1.0000000e+00 \\ \hline
+1.00000e-15 & 9.9920072e-01 & 1.0000000e+00 \\ \hline
+1.00000e-16 & 0.0000000e+00 & 1.0000000e+00 \\ \hline
+1.00000e-17 & 0.0000000e+00 & 1.0000000e+00 \\
+\multicolumn{3}{|c|}{\vdots} \\ \hline
+\end{tabular}
+\end{subtable}%
+\begin{subtable}{.5\linewidth}
+\centering
+\caption{ze skalowanym elementem głównym}
+\begin{tabular}{| c | r | r |} \hline
+$ \epsilon $ & $x_1$ & $x_2$ \\ \hline
+1.00000e-01 & 1.1111111e+00 & 8.8888889e-01 \\ \hline
+1.00000e-02 & 1.0101010e+00 & 9.8989899e-01 \\ \hline
+\multicolumn{3}{|c|}{\vdots} \\
+1.00000e-14 & 1.0000000e+00 & 1.0000000e+00 \\ \hline
+1.00000e-15 & 1.0000000e+00 & 1.0000000e+00 \\ \hline
+1.00000e-16 & 1.0000000e+00 & 1.0000000e+00 \\ \hline
+1.00000e-17 & 1.0000000e+00 & 1.0000000e+00 \\
+\multicolumn{3}{|c|}{\vdots} \\ \hline
+\end{tabular}
+\end{subtable}
+\caption{Porównanie implementacji eliminacji Gaussa dla układu \eqref{eq:gaussfail}}
+\end{table}
+\end{center}
+\subsection{Przykład zbieżny kwadratowo}
+Korzystamy tutaj z metody Newtona do rozwiązania układu równań
+\begin{align*}
+	f_1(x) &= (x_1)^2 + (x_2)^2 - 25 \\
+	f_2(x) &= (x_1)^2 - x_2 - 2
+\end{align*}
+dla przybliżenia początkowego $ x = (1, 1)^T $.
+\begin{table}[h]
+\centering
+\begin{tabular}{| l | r | r |} \hline
+Iteracja & $\|F(X)\|$ & $\epsilon$ \\ \hline
+0 & 3.114482e+01 & 5.884301e+00 \\ \hline
+1 & 5.301945e+01 & 3.675183e-01 \\ \hline
+2 & 9.411666e+00 & 1.725992e-01 \\ \hline
+3 & 7.950828e-01 & 2.592261e-02 \\ \hline
+4 & 1.475216e-02 & 5.889474e-04 \\ \hline
+5 & 8.572156e-06 & 3.413509e-07 \\ \hline
+6 & 2.913225e-12 & 1.158651e-13 \\ \hline
+7 & 1.256074e-15 & 3.663005e-17 \\ \hline
+\end{tabular}
+\caption{Kwadratowa zbieżność metody Newtona}
+\caption*{$ \epsilon $ - błąd względny przybliżenia\\$\|F(X)\|$ - norma wartości funkcji}
+\end{table}
+\subsection{Przykład zbieżny liniowo}
+Metoda Newtona dla funkcji wielu zmiennych nie zawsze jest zbieżna kwadratowo. Tak jak w przypadku funkcji jednej zmiennej, jeżeli pierwiastek którego szukamy jest wielokrotny lub pochodna zeruje się w pierwiastku, to nasz algorytm będzie zbieżny jedynie liniowo.
+\begin{align*}
+	f_1(x) &= (x_1)^3 + 7(x_2)^2 - 7 \\
+	f_2(x) &= (x_1)^2 + (x_2)^2 - 1
+\end{align*}
+\begin{table}[h]
+\centering
+\begin{tabular}{| l | r | r |} \hline
+Iteracja & $\|F(X)\|$ & $\epsilon$ \\ \hline
+0 & 4.472136e+00 & 1.264911e+00 \\ \hline
+1 & 2.031359e+01 & 8.820599e-01 \\ \hline
+2 & 1.371753e+01 & 4.438798e-01 \\
+\multicolumn{3}{|c|}{\vdots} \\
+14 & 1.599900e-07 & 1.999594e-04 \\ \hline
+15 & 3.998376e-08 & 9.997112e-05 \\ \hline
+16 & 9.994225e-09 & 4.998342e-05 \\ \hline
+17 & 2.498342e-09 & 2.499117e-05 \\ \hline
+18 & 6.245589e-10 & 1.249545e-05 \\ \hline
+19 & 1.561364e-10 & 6.247696e-06 \\ \hline
+\end{tabular}
+\caption{Liniowa zbieżność metody Newtona}
+\caption*{$ \epsilon $ - błąd względny przybliżenia\\$\|F(X)\|$ - norma wartości funkcji}
+\end{table}
 \section{Analiza wyników}
 \section{Metoda siecznych?}
 \section{Wnioski}

@@ -72,6 +72,23 @@ function set_3(T = Float64)
   F, J, ones(T, 3)
 end
 
+function set_4(T = Float64)
+  F(x) = [x[1]*x[1], x[2]*x[2]]
+  J(x) = [  T(2)*x[1] T(0)
+          ; T(0)      T(2)*x[2]
+         ]
+  F, J, [T(1), T(1)]
+end
+
+function set_5(T = Float64)
+  F(x) = [x[1]*x[1]*x[1] + T(7)*x[2] - T(7), x[1]*x[1] + x[2]*x[2] - T(1)]
+  J(x) = [  T(3)*x[1]*x[1] T(7)
+          ; T(2)*x[1]      T(2)*x[2]
+         ]
+  X0 = [T(1), T(2)]
+  F, J, X0
+end
+
 function vandermonde_matrix(n, T = Float64)
   A = Array{T}(n,n)
   B = Array{T}(n)
@@ -123,6 +140,42 @@ function comparison_1(T = Float64)
 
 end
 
+function naive_fail(T = Float64, ϵ = T(1e-2))
+  A = [ ϵ T(1)
+      ; T(1)     T(1)
+      ]
+  
+  B = [ T(1), T(2) ]
 
+  A, B
+end
 
+function polynomial(n, T = Float64)
+  p = 10 .* randn(n, n)
+  b = zeros(T, n)
+  F(x) = begin
+    y = zeros(T, n)
+    for i in 1 : n
+      for j in 1 : n
+        y[i] = y[i] + p[i, j] * x[j] * x[i]
+        b[i] += p[i,j]
+      end
+      y[i] -= T(1000)
+    end
+    y
+  end
+  J(x) = begin
+    y = zeros(T, n, n)
+    for i in 1 : n
+      for j in 1 : n
+        y[i,j] += p[i,j]*x[i]
+      end
+      for k in 1 : n
+        y[i,i] += p[i,k]*x[k]
+      end
+    end
+    y
+  end
+  F, J, b
+end
 end # Examples
