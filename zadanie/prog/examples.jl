@@ -101,9 +101,9 @@ function vandermonde_matrix(n, T = Float64)
   A, B
 end
 
-function vandermonde(n)
+function vandermonde(n, δ, T = Float64)
   F(X) = begin
-    B = Array{eltype(X)}(n)
+    B = Array{T}(n)
     for i in 1 : n
       sum = 0
       for j in 1 : n
@@ -114,7 +114,7 @@ function vandermonde(n)
     B
   end
   J(X) = begin
-    B = Array{eltype(X)}(n,n)
+    B = Array{T}(n,n)
     for i in 1 : n
       for j in 1 : n
         B[i, j] = (i + 1) ^ (j - 1)
@@ -122,7 +122,8 @@ function vandermonde(n)
     end
     B
   end
-  (F, J)
+  r = rand(T, n) * T(2)*δ
+  F, J, ones(T, n) - δ + r
 end
 
 function comparison_1(T = Float64)
@@ -150,17 +151,19 @@ function naive_fail(T = Float64, ϵ = T(1e-2))
   A, B
 end
 
-function polynomial(n, T = Float64)
-  p = 10 .* randn(n, n)
-  b = zeros(T, n)
+function polynomial(n, δ, T = Float64)
+  p = Array{T}(n, n)
+  for i in 1 : n
+    for j in 1 : n
+      p[i, j] = T(rand(-10 : 1 : 10))
+    end
+  end
   F(x) = begin
     y = zeros(T, n)
     for i in 1 : n
       for j in 1 : n
-        y[i] = y[i] + p[i, j] * x[j] * x[i]
-        b[i] += p[i,j]
+        y[i] += p[i, j] * x[j] * x[i]
       end
-      y[i] -= T(1000)
     end
     y
   end
@@ -176,6 +179,80 @@ function polynomial(n, T = Float64)
     end
     y
   end
-  F, J, b
+  b = F(ones(T, n))
+  r = rand(n) * T(2)*δ
+  (x -> F(x) - b), J, ones(T, n) - δ + r
 end
+
+function sin_cos(n, δ, T = Float64)
+  F(x) = begin
+    y = zeros(T, n)
+    for i in 1 : n
+      y[i] += x[i] * x[i]
+      for j in 1 : n
+        if i != j
+          y[i] += sin(x[i]) * cos(x[j])
+        end
+      end
+    end
+    y
+  end
+  J(x) = begin
+    y = zeros(T, n, n)
+    for i in 1 : n
+      for j in 1 : n
+        if i == j
+          y[i, j] += T(2) * x[i] 
+          for k in 1 : n
+            if k != i
+              y[i, i] += cos(x[i]) * cos(x[k])
+            end
+          end
+        else
+          y[i, j] -= sin(x[i]) * sin(x[j])
+        end
+      end
+    end
+    y
+  end
+  b = F(ones(T, n))
+  r = rand(n) * T(2)δ
+  (x -> F(x) - b), J, ones(T, n) - δ + r 
+end
+
+function sin_cos_2(n, δ, T = Float64)
+  F(x) = begin
+    y = zeros(T, n)
+    for i in 0 : n - 1
+      y[i+1] += sin(x[i+1]) * sin(x[(i+1)%n + 1]) * cos(x[(i+2)%n + 1])
+    end
+    y
+  end
+  J(x) = begin
+    y = zeros(T, n, n)
+    for i in 0 : n-1
+      y[i+1, i+1] += cos(x[i+1]) * sin(x[(i+1)%n + 1]) * cos(x[(i+2)%n + 1])
+      y[i+1, (i+1)%n + 1] += 
+        sin(x[i+1]) * cos(x[(i+1)%n + 1]) * cos(x[(i+2)%n + 1])
+      y[i+1, (i+2)%n + 1] -= 
+        sin(x[i+1]) * sin(x[(i+1)%n + 1]) * sin(x[(i+2)%n + 1])
+    end
+    y
+  end
+  b = F(ones(T, n))
+  r = rand(n) * T(2)*δ
+  (x -> F(x) - b), J, ones(T, n) - δ + r 
+end
+
+function set_6(T = Float64)
+  F(x) = [x[1] * x[1] + sin(x[1]) * cos(x[2]), x[2]*x[2] + sin(x[2]) * cos(x[1])]
+  J(x) = [ T(2) * x[1] + cos(x[1]) * cos(x[2]) (-sin(x[1]) * sin(x[2]))
+         ; -sin(x[2]) * sin(x[1]) T(2) * x[2] + cos(x[2]) * cos(x[1])
+         ]
+  B = F([1.0, 1.0])
+  (x -> F(x) - B), J, [0.7, 1.8]
+end
+
+
+
 end # Examples
