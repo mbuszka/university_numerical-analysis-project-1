@@ -12,7 +12,7 @@ function show_naive_fail(solve = gauss_naive!, latex = false)
     A, B = Examples.naive_fail(Float64, ϵ)
     X = solve(A, B)
     if latex
-      @printf "%.5e & %.7e & %.7e \\\\ \\hline\n" ϵ X[1] X[2]
+      @printf "%e & %.7f & %.7f \\\\ \\hline\n" ϵ X[1] X[2]
     else
       @printf "%.5e\t%.7e\t%.7e\n" ϵ X[1] X[2]
     end
